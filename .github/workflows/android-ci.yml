@@ -24,12 +24,12 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           api-level: 34
-          target: google_apis
           build-tools: 34.0.0
 
       - name: Build debug APK
         run: |
-          gradlew assembleDebug
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
