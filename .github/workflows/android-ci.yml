@@ -55,25 +55,27 @@ jobs:
           export ANDROID_HOME=$HOME/android-sdk
           export PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH
           export PATH=/home/runner/gradle-8.2/bin:$PATH
+          export GRADLE_USER_HOME=$RUNNER_TEMP/gradle-home
+          mkdir -p $GRADLE_USER_HOME
+          echo "=== Java ==="
           java -version
-          echo "=== Environment ==="
-          env | grep -E 'ANDROID|GRADLE|JAVA' || true
+          echo "JAVA_HOME=$JAVA_HOME"
+          echo "=== Gradle ==="
+          gradle --version
           echo "=== Build ==="
-          /home/runner/gradle-8.2/bin/gradle assembleDebug --stacktrace --info --debug
+          /home/runner/gradle-8.2/bin/gradle assembleDebug --stacktrace --info --no-daemon 2>&1 | tee $RUNNER_TEMP/gradle-build.log
 
       - name: Upload APK artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-      - name: Upload build logs on failure
-        if: failure()
+      - name: Upload build log (always)
         uses: actions/upload-artifact@v4
         with:
-          name: build-logs
-          path: |
-            ~/.gradle
-            app/build
+          name: gradle-build-log
+          path: $RUNNER_TEMP/gradle-build.log
           retention-days: 7
