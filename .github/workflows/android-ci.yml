@@ -53,12 +53,14 @@ jobs:
       - name: Build debug APK
         working-directory: ${{ github.workspace }}
         run: |
+          set +e
           export ANDROID_SDK_ROOT=$HOME/android-sdk
           export ANDROID_HOME=$HOME/android-sdk
           export PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH
           export PATH=/home/runner/gradle-8.2/bin:$PATH
           export GRADLE_USER_HOME=$RUNNER_TEMP/gradle-home
           mkdir -p $GRADLE_USER_HOME
+          LOG=$GITHUB_WORKSPACE/ci-diag.log
           GRADLE=/home/runner/gradle-8.2/bin/gradle
           {
             echo "=== DIAG $(date -u) ==="
@@ -67,31 +69,33 @@ jobs:
             ls -la
             echo "android sdk root: $ANDROID_SDK_ROOT"
             ls "$ANDROID_SDK_ROOT"
-            echo "gradle binary: $(ls -la $GRADLE || echo MISSING)"
+            echo "gradle binary: $(ls -la $GRADLE 2>&1 || echo MISSING)"
             echo "gradle version:"
             "$GRADLE" --version
             echo "=== gradle assembleDebug output ==="
-          } > ci-diag.log
-          "$GRADLE" assembleDebug --no-daemon >> ci-diag.log 2>&1
+          } > "$LOG"
+          "$GRADLE" assembleDebug --no-daemon >> "$LOG" 2>&1
           GRADLE_EXIT=$?
-          echo "GRADLE_EXIT=$GRADLE_EXIT" >> ci-diag.log
-          echo "=== post-build files ===" >> ci-diag.log
-          find app/build -name "*.apk" 2>&1 >> ci-diag.log
-          tail -n 200 ci-diag.log
-          echo "APK check:"
-          ls -la app/build/outputs/apk/debug/app-debug.apk
+          echo "GRADLE_EXIT=$GRADLE_EXIT" >> "$LOG"
+          echo "=== post-build files ===" >> "$LOG"
+          find app/build -name "*.apk" 2>&1 >> "$LOG" || echo "find failed"
+          echo "=== tail of log ==="
+          tail -n 300 "$LOG"
+          echo "=== exit with gradle code ==="
+          exit $GRADLE_EXIT
 
       - name: Upload APK artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: ${{ github.workspace }}/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
       - name: Upload build log (always)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gradle-build-log
-          path: ci-diag.log
+          path: ${{ github.workspace }}/ci-diag.log
           retention-days: 7
