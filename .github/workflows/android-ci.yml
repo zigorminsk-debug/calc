@@ -28,6 +28,7 @@ jobs:
           mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
           chmod +x $HOME/android-sdk/cmdline-tools/latest/bin/*
           echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
           yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
           $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
@@ -35,6 +36,7 @@ jobs:
       - name: Verify SDK install
         run: |
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          echo "ANDROID_HOME=$ANDROID_HOME"
           ls -la $ANDROID_SDK_ROOT
           ls -la $ANDROID_SDK_ROOT/cmdline-tools/latest/bin
           $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list
@@ -64,9 +66,17 @@ EOF
       - name: Build debug APK
         run: |
           export ANDROID_SDK_ROOT=$HOME/android-sdk
+          export ANDROID_HOME=$HOME/android-sdk
           export PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH
           export PATH=/home/runner/gradle-8.2/bin:$PATH
-          ./gradlew assembleDebug --stacktrace --info
+          java -version
+          echo "=== Environment ==="
+          env | grep -E 'ANDROID|GRADLE|JAVA' || true
+          echo "=== Gradle wrapper ==="
+          ls -la gradlew
+          cat gradlew
+          echo "=== Build ==="
+          ./gradlew assembleDebug --stacktrace --info --debug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
