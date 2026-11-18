@@ -55,6 +55,13 @@ jobs:
           echo "sdk.dir=$HOME/android-sdk" > $GITHUB_WORKSPACE/local.properties
           cat $GITHUB_WORKSPACE/local.properties
 
+      - name: Network check to Maven Central
+        run: |
+          echo "=== Maven Central connectivity ==="
+          curl -sI https://repo1.maven.org/maven2/ | head -5 || echo "curl failed"
+          echo "=== Google Maven connectivity ==="
+          curl -sI https://maven.google.com/ | head -5 || echo "curl failed"
+
       - name: Build debug APK
         working-directory: ${{ github.workspace }}
         run: |
@@ -79,13 +86,13 @@ jobs:
             "$GRADLE" --version
             echo "=== gradle assembleDebug output ==="
           } > "$LOG"
-          "$GRADLE" assembleDebug --no-daemon --stacktrace >> "$LOG" 2>&1
+          "$GRADLE" assembleDebug --no-daemon --stacktrace --info >> "$LOG" 2>&1
           GRADLE_EXIT=$?
           echo "GRADLE_EXIT=$GRADLE_EXIT" >> "$LOG"
           echo "=== post-build files ===" >> "$LOG"
           find app/build -name "*.apk" 2>&1 >> "$LOG" || echo "find failed"
           echo "=== tail of log ==="
-          tail -n 300 "$LOG"
+          tail -n 500 "$LOG"
           echo "=== exit with gradle code ==="
           exit $GRADLE_EXIT
 
