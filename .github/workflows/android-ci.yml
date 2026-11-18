@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -20,9 +21,6 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v3
-
       - name: Install Android SDK command-line tools
         run: |
           ANDROID_SDK_ROOT=$HOME/android-sdk
@@ -35,15 +33,21 @@ jobs:
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
+      - name: Install Gradle 8.2
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O /tmp/gradle-8.2-bin.zip
+          unzip -q /tmp/gradle-8.2-bin.zip -d $HOME
+          echo "$HOME/gradle-8.2/bin" >> $GITHUB_PATH
+
       - name: Build debug APK
         run: |
           export ANDROID_SDK_ROOT=$HOME/android-sdk
-          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
-          gradle assembleDebug
+          export ANDROID_HOME=$HOME/android-sdk
+          $HOME/gradle-8.2/bin/gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
         if: success()
+        uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
