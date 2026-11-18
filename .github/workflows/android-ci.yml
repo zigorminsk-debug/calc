@@ -35,7 +35,7 @@ jobs:
       - name: Install Gradle
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip
-          unzip -q gradle-8.2-bin.zip
+          unzip -q gradle-8.2-bin.zip -d $HOME
           echo "GRADLE_HOME=$HOME/gradle-8.2" >> $GITHUB_ENV
           echo "$HOME/gradle-8.2/bin" >> $GITHUB_PATH
 
@@ -44,7 +44,7 @@ jobs:
           export ANDROID_SDK_ROOT=$HOME/android-sdk
           export PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH
           export PATH=$HOME/gradle-8.2/bin:$PATH
-          gradle assembleDebug
+          gradle assembleDebug --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -52,3 +52,11 @@ jobs:
           name: app-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: ~/.gradle
+          retention-days: 7
