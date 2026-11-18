@@ -32,19 +32,41 @@ jobs:
           yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
           $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Install Gradle
+      - name: Verify SDK install
         run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip
-          unzip -q gradle-8.2-bin.zip -d $HOME
-          echo "GRADLE_HOME=$HOME/gradle-8.2" >> $GITHUB_ENV
-          echo "$HOME/gradle-8.2/bin" >> $GITHUB_PATH
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          ls -la $ANDROID_SDK_ROOT
+          ls -la $ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list
+
+      - name: Install Gradle wrapper
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O /tmp/gradle-8.2-bin.zip
+          unzip -q /tmp/gradle-8.2-bin.zip -d /tmp
+          cp -r /tmp/gradle-8.2 /home/runner/gradle-8.2
+          echo "/home/runner/gradle-8.2/bin" >> $GITHUB_PATH
+          echo "GRADLE_HOME=/home/runner/gradle-8.2" >> $GITHUB_ENV
+          # Generate wrapper
+          mkdir -p gradle/wrapper
+          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+EOF
+          cat > gradlew << 'EOF'
+#!/bin/bash
+exec /home/runner/gradle-8.2/bin/gradle "$@"
+EOF
+          chmod +x gradlew
 
       - name: Build debug APK
         run: |
           export ANDROID_SDK_ROOT=$HOME/android-sdk
           export PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH
-          export PATH=$HOME/gradle-8.2/bin:$PATH
-          gradle assembleDebug --stacktrace
+          export PATH=/home/runner/gradle-8.2/bin:$PATH
+          ./gradlew assembleDebug --stacktrace --info
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -58,5 +80,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-logs
-          path: ~/.gradle
+          path: |
+            ~/.gradle
+            app/build
           retention-days: 7
