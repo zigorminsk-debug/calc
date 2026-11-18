@@ -41,27 +41,13 @@ jobs:
           ls -la $ANDROID_SDK_ROOT/cmdline-tools/latest/bin
           $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list
 
-      - name: Install Gradle wrapper
+      - name: Install Gradle
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O /tmp/gradle-8.2-bin.zip
           unzip -q /tmp/gradle-8.2-bin.zip -d /tmp
           cp -r /tmp/gradle-8.2 /home/runner/gradle-8.2
           echo "/home/runner/gradle-8.2/bin" >> $GITHUB_PATH
           echo "GRADLE_HOME=/home/runner/gradle-8.2" >> $GITHUB_ENV
-          # Generate wrapper
-          mkdir -p gradle/wrapper
-          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
-distributionBase=GRADLE_USER_HOME
-distributionPath=wrapper/dists
-distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
-zipStoreBase=GRADLE_USER_HOME
-zipStorePath=wrapper/dists
-EOF
-          cat > gradlew << 'EOF'
-#!/bin/bash
-exec /home/runner/gradle-8.2/bin/gradle "$@"
-EOF
-          chmod +x gradlew
 
       - name: Build debug APK
         run: |
@@ -72,11 +58,8 @@ EOF
           java -version
           echo "=== Environment ==="
           env | grep -E 'ANDROID|GRADLE|JAVA' || true
-          echo "=== Gradle wrapper ==="
-          ls -la gradlew
-          cat gradlew
           echo "=== Build ==="
-          ./gradlew assembleDebug --stacktrace --info --debug
+          /home/runner/gradle-8.2/bin/gradle assembleDebug --stacktrace --info --debug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
