@@ -43,7 +43,7 @@ jobs:
           $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list
 
       - name: Set up Gradle
-        uses: actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 8.2
 
